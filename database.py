@@ -1,25 +1,21 @@
-from sqlalchemy import Enum
-from enum import Enum as PyEnum
+from sqlalchemy import create_engine, Column, Integer, String
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
 
-class OrderType(PyEnum):
-    BUY = "buy"
-    SELL = "sell"
+Base = declarative_base()
 
 class Order(Base):
-    __tablename__ = "orders"
+    __tablename__ = 'orders'
+
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer)
-    coin = Column(String)
-    amount = Column(Float)
-    price = Column(Float)
-    order_type = Column(Enum(OrderType))
-    status = Column(String, default="pending")
+    product_name = Column(String)
+    quantity = Column(Integer)
 
-def create_order(user_id, coin, amount, price, order_type):
-    order = Order(user_id=user_id, coin=coin, amount=amount, price=price, order_type=order_type)
-    session.add(order)
-    session.commit()
-    return order
+# Создание движка и сессии
+engine = create_engine('sqlite:///example.db')
+Session = sessionmaker(bind=engine)
+session = Session()
 
-def get_orders():
-    return session.query(Order).all()
+# Создание таблиц
+Base.metadata.create_all(engine)
