@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 import os
 import requests
 
-from coingecko import get_crypto_price
+from pycoingecko import CoinGeckoAPI
 from promocodes import validate_promo_code
 from database import create_order, get_user
 from keyboards import main_menu, crypto_menu
@@ -26,12 +26,15 @@ dp.middleware.setup(LoggingMiddleware())
 
 scheduler = AsyncIOScheduler()
 
+cg = CoinGeckoAPI()
+SUPPORTED_COINS = ['bitcoin', 'ethereum', 'ripple']  # Пример списка поддерживаемых монет
+
 async def send_price_updates():
     users = [...]  # Получите пользователей из базы данных
     for user in users:
         for coin in SUPPORTED_COINS:
-            price = get_crypto_price(coin)
-            await bot.send_message(user.id, f"Текущий курс {coin.upper()} = ${price:.2f}")
+            price = cg.get_price(ids=coin, vs_currencies='usd')
+            await bot.send_message(user.id, f"Текущий курс {coin.upper()} = ${price[coin]['usd']:.2f}")
 
 scheduler.add_job(send_price_updates, IntervalTrigger(hours=1))
 scheduler.start()
@@ -76,9 +79,9 @@ async def change_language(message: types.Message):
 @dp.callback_query_handler(lambda c: c.data.startswith('crypto_'))
 async def crypto_handler(callback_query: types.CallbackQuery):
     coin = callback_query.data.split('_')[1]
-    price = get_crypto_price(coin)
+    price = cg.get_price(ids=coin, vs_currencies='usd')
     if price:
-        await bot.send_message(callback_query.from_user.id, f"Текущий курс {coin.upper()} = ${price:.2f}")
+        await bot.send_message(callback_query.from_user.id, f"Текущий курс {coin.upper()} = ${price[coin]['usd']:.2f}")
     else:
         await bot.send_message(callback_query.from_user.id, f"Не удалось получить данные по {coin.upper()}.")
 
